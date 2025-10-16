@@ -2,6 +2,8 @@ import time, math
 import streamlit as st
 import numpy as np
 from streamlit_webrtc import webrtc_streamer, WebRtcMode
+
+from stfu.servers.ice import get_ice_servers
 from ...state import init_state
 from ...audio.processor import NoiseProcessor
 from ..glass import render_glass
@@ -11,6 +13,10 @@ def render():
     st.title("🥛 Stillepause – I timen")
     st.caption("Blir det bråk lekker glasset! Vann igjen = pausetid.")
     ss = st.session_state
+    ice_servers = get_ice_servers()
+    # Fallback if none configured
+    if not ice_servers:
+        ice_servers = [{"urls": ["stun:stun.l.google.com:19302"]}]
 
     ctx = webrtc_streamer(
         key="mic",
@@ -19,7 +25,7 @@ def render():
         media_stream_constraints={"audio": True, "video": False},
         async_processing=False,
         audio_processor_factory=NoiseProcessor,
-        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
+        rtc_configuration={"iceServers": ice_servers},
     )
 
     ml_total = float(ss.initial_water_ml)
